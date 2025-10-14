@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tienda de Plantas — Pedido simple</title>
+  <style>
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --panel:#111827;       /* gray-900 */
+      --muted:#334155;       /* slate-600 */
+      --text:#e5e7eb;        /* gray-200 */
+      --accent:#22c55e;      /* green-500 */
+      --accent-2:#16a34a;    /* green-600 */
+      --danger:#ef4444;      /* red-500 */
+      --chip:#1f2937;        /* gray-800 */
+      --card:#0b1220;        /* deep */
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Helvetica,Arial,sans-serif;background:linear-gradient(160deg,#0b1020,#101827 40%,#0f172a);color:var(--text)}
+    header{position:sticky;top:0;z-index:20;background:rgba(17,24,39,.7);backdrop-filter:blur(8px);border-bottom:1px solid #1f2937}
+    .wrap{max-width:1100px;margin:0 auto;padding:clamp(14px,2vw,22px)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand h1{margin:0;font-size:clamp(18px,3vw,22px);font-weight:700}
+    .hint{color:#94a3b8;font-size:12px}
+
+    .layout{display:grid;grid-template-columns:1fr 360px;gap:24px;margin-top:18px}
+    @media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+    /* Catalog */
+    .grid{display:grid;grid-template-columns:repeat( auto-fill, minmax(220px,1fr) );gap:16px}
+    .card{background:linear-gradient(180deg,#0d1324,#0b1120);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px}
+    .thumb{height:120px;border-radius:12px;background:radial-gradient(70% 60% at 50% 40%, #1e293b 0%, #0b1220 100%);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
+    .title{font-weight:650}
+    .price{color:#a7f3d0;font-weight:700}
+    .qty{display:flex;gap:8px;align-items:center;margin-top:auto}
+    .btn{cursor:pointer;border:0;border-radius:12px;padding:10px 12px;font-weight:700}
+    .btn-primary{background:var(--accent);color:#052e16}
+    .btn-primary:hover{background:var(--accent-2)}
+    .btn-ghost{background:#111827;color:#e5e7eb;border:1px solid #1f2937}
+    .btn-ghost:hover{background:#0b1220}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:var(--chip);border:1px solid #1f2937;border-radius:999px;padding:6px 10px;color:#cbd5e1;font-size:12px}
+
+    /* Cart */
+    .panel{background:linear-gradient(180deg,#0b1020,#0a0f1b);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;position:sticky;top:68px}
+    .panel h2{margin:0 0 8px;font-size:18px}
+    .cart-list{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto;padding-right:6px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:#0a1221;border:1px solid #1f2937;border-radius:12px;padding:10px}
+    .row strong{font-weight:600}
+    .row small{color:#94a3b8}
+    .qty-ctrl{display:flex;align-items:center;gap:8px}
+    .icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid #1f2937;background:#0e1628;color:#e5e7eb;cursor:pointer}
+    .icon-btn:hover{background:#0a1221}
+    .total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed #1f2937}
+
+    /* Form */
+    form{display:grid;gap:10px;margin-top:14px}
+    label{font-size:12px;color:#cbd5e1}
+    input, textarea{width:100%;background:#0a1221;border:1px solid #1f2937;border-radius:12px;padding:10px;color:#e5e7eb}
+    input:focus, textarea:focus{outline:2px solid #22c55e33}
+    .submit{display:flex;gap:10px;align-items:center}
+
+    .toast{position:fixed;right:16px;bottom:16px;background:#052e16;color:#dcfce7;border:1px solid #065f46;padding:12px 14px;border-radius:12px;opacity:0;transform:translateY(8px);transition:all .25s}
+    .toast.show{opacity:1;transform:translateY(0)}
+
+    .searchbar{display:flex;gap:8px;margin-bottom:12px}
+    .searchbar input{flex:1}
+    .empty{color:#94a3b8;font-size:13px;padding:12px;border:1px dashed #1f2937;border-radius:12px;text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4.97 0 9-4.03 9-9 0-2.5-1.02-4.76-2.67-6.4-.72-.72-2.09-.38-2.33.62a8.002 8.002 0 0 1-11.22 5.22c-1-.24-1.34 1.61-.62 2.33A8.96 8.96 0 0 0 12 22Z" fill="#22c55e"/><path d="M6 12c0-3.31 2.69-6 6-6 .83 0 1.5-.67 1.5-1.5S12.83 3 12 3C7.03 3 3 7.03 3 12c0 .83.67 1.5 1.5 1.5S6 12.83 6 12Z" fill="#86efac"/></svg>
+      <div>
+        <h1>Catálogo de Plantas — Pedido Express</h1>
+        <div class="hint">Escoge tus plantas, agrega al carrito y envíanos tus datos. Te contactaremos para coordinar la compra.</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <section>
+      <div class="searchbar">
+        <input id="q" type="search" placeholder="Buscar por nombre…" oninput="render()" />
+        <button class="btn btn-ghost" onclick="clearSearch()">Limpiar</button>
+        <span class="pill" id="countChip">0 resultados</span>
+      </div>
+
+      <div id="catalog" class="grid"></div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h2>Tu carrito</h2>
+        <div id="cartList" class="cart-list"></div>
+        <div class="total">
+          <strong>Total</strong>
+          <div id="total">$0</div>
+        </div>
+
+        <form id="orderForm" onsubmit="submitOrder(event)">
+          <div>
+            <label for="name">Nombre y apellido</label>
+            <input id="name" required placeholder="Juan Pérez" />
+          </div>
+          <div>
+            <label for="phone">Teléfono</label>
+            <input id="phone" required placeholder="+56 9 1234 5678" />
+          </div>
+          <div>
+            <label for="email">Correo</label>
+            <input id="email" type="email" required placeholder="correo@dominio.com" />
+          </div>
+          <div>
+            <label for="notes">Notas (opcional)</label>
+            <textarea id="notes" rows="2" placeholder="Instrucciones o comentarios"></textarea>
+          </div>
+          <div class="submit">
+            <button class="btn btn-primary" type="submit">Enviar pedido</button>
+            <button class="btn btn-ghost" type="button" onclick="clearCart()">Vaciar</button>
+          </div>
+          <div class="hint">Al enviar, registramos tu pedido y te contactaremos por WhatsApp o correo.</div>
+        </form>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast">Pedido enviado. ¡Gracias! ✅</div>
+
+  <script>
+    // ⚙️ 1) Configura tu endpoint de Google Apps Script publicado como Web App (doPost)
+    const GAS_URL = "https://script.google.com/macros/s/PASTE_WEB_APP_URL_HERE/exec"; // <— reemplaza por tu URL
+
+    // 📦 2) Catálogo con precios en CLP (extraído del catálogo PDF)
+    const products = [
+      { name: "Lavanda stoecha", price: 7000 },
+      { name: "Sisyrinchium", price: 6000 },
+      { name: "Tulbaghia", price: 3500 },
+      { name: "Helecho paragua", price: 20000 },
+      { name: "Armeria maritima", price: 2500 },
+      { name: "Salvia superba", price: 3500 },
+      { name: "Valeriana", price: 10000 },
+      { name: "Bulbine", price: 3000 },
+      { name: "Romero Tuscan", price: 4000 },
+      { name: "Cola de zorro", price: 5000 },
+      { name: "Carex flagellifera kiwi", price: 5000 },
+      { name: "Pachyphytum hookeri", price: 5500 },
+      { name: "Crassula swaziensis variegada", price: 5000 },
+      { name: "Agave celsii nova", price: 55000 },
+      { name: "Peumo", price: 18000 },
+      { name: "Diosma", price: 15000 },
+      { name: "Lithodora diffusa", price: 7000 },
+      { name: "Bergenia cordifolia winterglut", price: 5000 },
+      { name: "Lavanda dentada", price: 8000 },
+      { name: "Agapanto lila", price: 4000 },
+      { name: "Anigozanthos bush gold", price: 15000 },
+      { name: "Anigozanthos fire house orange m21", price: 20000 },
+      { name: "Anigozanthos fire house orange m26", price: 35000 },
+      { name: "Rhus crenata", price: 5500 },
+      { name: "Pittosporo tobira enano", price: 5500 },
+      { name: "Aloe tomentosa", price: 60000 },
+      { name: "Yucca blue velvet", price: 55000 },
+      { name: "Puya coerulea", price: 30000 },
+      { name: "Calle calle", price: 6500 },
+      { name: "Erysimum", price: 5500 },
+      { name: "Manto de eva", price: 75000 },
+      { name: "Jazmin helice", price: 25000 }
+    ];
+
+    // 🛒 Estado del carrito
+    const cart = new Map(); // key: name, value: {name, price, qty}
+
+    const catalogEl = document.getElementById('catalog');
+    const cartListEl = document.getElementById('cartList');
+    const totalEl = document.getElementById('total');
+    const toastEl = document.getElementById('toast');
+    const qEl = document.getElementById('q');
+    const countChip = document.getElementById('countChip');
+
+    const CLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
+
+    function render(){
+      const q = qEl.value?.trim().toLowerCase();
+      const list = q ? products.filter(p=>p.name.toLowerCase().includes(q)) : products;
+      countChip.textContent = `${list.length} ${list.length===1? 'resultado':'resultados'}`;
+
+      if(!list.length){
+        catalogEl.innerHTML = `<div class="empty">No encontramos plantas con “${q}”.</div>`;
+        return;
+      }
+
+      catalogEl.innerHTML = list.map(p => {
+        return `<article class="card">
+          <div class="thumb">Imagen de referencia</div>
+          <div class="title">${p.name}</div>
+          <div class="price">${CLP.format(p.price)}</div>
+          <div class="qty">
+            <button class="btn btn-ghost" onclick="dec('${p.name.replaceAll('"','&quot;')}')">−</button>
+            <span id="q-${cssId(p.name)}">${cart.get(p.name)?.qty || 0}</span>
+            <button class="btn btn-ghost" onclick="inc('${p.name.replaceAll('"','&quot;')}', ${p.price})">＋</button>
+            <button class="btn btn-primary" style="margin-left:auto" onclick="inc('${p.name.replaceAll('"','&quot;')}', ${p.price})">Agregar</button>
+          </div>
+        </article>`
+      }).join('');
+
+      renderCart();
+    }
+
+    function cssId(name){
+      return name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    }
+
+    function inc(name, price){
+      const item = cart.get(name) || { name, price, qty:0 };
+      item.qty++;
+      cart.set(name, item);
+      document.getElementById(`q-${cssId(name)}`).textContent = item.qty;
+      renderCart();
+    }
+
+    function dec(name){
+      const item = cart.get(name);
+      if(!item) return;
+      item.qty--;
+      if(item.qty <= 0){ cart.delete(name); }
+      const qSpan = document.getElementById(`q-${cssId(name)}`);
+      if(qSpan) qSpan.textContent = Math.max(item?.qty||0,0);
+      renderCart();
+    }
+
+    function clearCart(){
+      cart.clear();
+      document.querySelectorAll('[id^=q-]').forEach(n=> n.textContent = '0');
+      renderCart();
+    }
+
+    function renderCart(){
+      if(cart.size===0){
+        cartListEl.innerHTML = `<div class="empty">Tu carrito está vacío. Agrega plantas desde el catálogo.</div>`;
+        totalEl.textContent = CLP.format(0);
+        return;
+      }
+      let total = 0;
+      cartListEl.innerHTML = Array.from(cart.values()).map(item => {
+        const line = item.price * item.qty;
+        total += line;
+        return `<div class="row">
+          <div>
+            <strong>${item.name}</strong><br/>
+            <small>${item.qty} × ${CLP.format(item.price)}</small>
+          </div>
+          <div class="qty-ctrl">
+            <button class="icon-btn" title="Quitar" onclick="dec('${item.name.replaceAll('"','&quot;')}')">−</button>
+            <button class="icon-btn" title="Agregar" onclick="inc('${item.name.replaceAll('"','&quot;')}', ${item.price})">＋</button>
+          </div>
+        </div>`
+      }).join('');
+      totalEl.textContent = CLP.format(total);
+    }
+
+    function clearSearch(){ qEl.value=''; render(); }
+
+    async function submitOrder(e){
+      e.preventDefault();
+      if(cart.size===0){
+        alert('Agrega al menos 1 planta al carrito.');
+        return;
+      }
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+
+      // Armar payload
+      const items = Array.from(cart.values()).map(i => ({ name:i.name, price:i.price, qty:i.qty }));
+      const total = items.reduce((s,i)=> s + i.price*i.qty, 0);
+      const payload = {
+        ts: new Date().toISOString(),
+        name, phone, email, notes,
+        items,
+        total,
+        source: location.href
+      };
+
+      try{
+        const res = await fetch(GAS_URL, {
+          method:'POST',
+          mode:'no-cors', // Apps Script devuelve 200 sin CORS; no podemos leer body
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        showToast();
+        // Limpieza gentil
+        clearCart();
+        document.getElementById('orderForm').reset();
+      }catch(err){
+        alert('Hubo un problema enviando tu pedido. Intenta de nuevo.');
+        console.error(err);
+      }
+    }
+
+    function showToast(){
+      toastEl.classList.add('show');
+      setTimeout(()=> toastEl.classList.remove('show'), 2500);
+    }
+
+    // Inicial
+    render();
+  </script>
+</body>
+</html>
