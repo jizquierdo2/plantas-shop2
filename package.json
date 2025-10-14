@@ -1,0 +1,12 @@
+{
+  "name": "plantas-shop",
+  "version": "1.0.0",
+  "description": "Tienda de plantas simple con carrito",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

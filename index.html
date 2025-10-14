@@ -32,7 +32,8 @@
     /* Catalog */
     .grid{display:grid;grid-template-columns:repeat( auto-fill, minmax(220px,1fr) );gap:16px}
     .card{background:linear-gradient(180deg,#0d1324,#0b1120);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px}
-    .thumb{height:120px;border-radius:12px;background:radial-gradient(70% 60% at 50% 40%, #1e293b 0%, #0b1220 100%);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px}
+    .thumb{height:140px;border-radius:12px;background:radial-gradient(70% 60% at 50% 40%, #1e293b 0%, #0b1220 100%);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;overflow:hidden}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .title{font-weight:650}
     .price{color:#a7f3d0;font-weight:700}
     .qty{display:flex;gap:8px;align-items:center;margin-top:auto}
@@ -68,6 +69,21 @@
     .searchbar{display:flex;gap:8px;margin-bottom:12px}
     .searchbar input{flex:1}
     .empty{color:#94a3b8;font-size:13px;padding:12px;border:1px dashed #1f2937;border-radius:12px;text-align:center}
+
+    /* === Modal de éxito === */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);
+      display:none;align-items:center;justify-content:center;z-index:50;
+    }
+    .modal{
+      width:min(92vw,440px);background:linear-gradient(180deg,#0d1324,#0b1120);
+      border:1px solid #1f2937;border-radius:16px;box-shadow:var(--shadow);padding:18px;
+      text-align:center;
+    }
+    .modal h3{margin:0 0 6px}
+    .modal p{margin:6px 0 14px;color:#cbd5e1}
+    .modal .actions{display:flex;gap:10px;justify-content:center}
+    .hidden{display:none}
   </style>
 </head>
 <body>
@@ -75,7 +91,7 @@
     <div class="wrap brand">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4.97 0 9-4.03 9-9 0-2.5-1.02-4.76-2.67-6.4-.72-.72-2.09-.38-2.33.62a8.002 8.002 0 0 1-11.22 5.22c-1-.24-1.34 1.61-.62 2.33A8.96 8.96 0 0 0 12 22Z" fill="#22c55e"/><path d="M6 12c0-3.31 2.69-6 6-6 .83 0 1.5-.67 1.5-1.5S12.83 3 12 3C7.03 3 3 7.03 3 12c0 .83.67 1.5 1.5 1.5S6 12.83 6 12Z" fill="#86efac"/></svg>
       <div>
-        <h1>Catálogo de Plantas — Pedido Express</h1>
+        <h1>Lab Paisajismo — Catálogo de Plantas</h1>
         <div class="hint">Escoge tus plantas, agrega al carrito y envíanos tus datos. Te contactaremos para coordinar la compra.</div>
       </div>
     </div>
@@ -123,6 +139,13 @@
             <button class="btn btn-ghost" type="button" onclick="clearCart()">Vaciar</button>
           </div>
           <div class="hint">Al enviar, registramos tu pedido y te contactaremos por WhatsApp o correo.</div>
+
+          <!-- 👇 2) Link a Instagram al final del formulario -->
+          <div style="margin-top:6px">
+            <a href="https://www.instagram.com/lab.paisajismo/" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">
+              Síguenos en Instagram: @lab.paisajismo
+            </a>
+          </div>
         </form>
       </div>
     </aside>
@@ -130,9 +153,21 @@
 
   <div id="toast" class="toast">Pedido enviado. ¡Gracias! ✅</div>
 
+  <!-- 👇 1) Modal de éxito -->
+  <div id="successModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="modal">
+      <h3 id="successTitle">¡Pedido enviado con éxito! 🎉</h3>
+      <p>Pronto te contactaremos para coordinar la compra.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://www.instagram.com/lab.paisajismo/" target="_blank" rel="noopener">Sígueme en Instagram</a>
+        <button class="btn btn-ghost" type="button" onclick="hideModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ⚙️ 1) Configura tu endpoint de Google Apps Script publicado como Web App (doPost)
-    const GAS_URL = "https://script.google.com/macros/s/PASTE_WEB_APP_URL_HERE/exec"; // <— reemplaza por tu URL
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwsv7rvpUiDdm-OUqie2yRYKBUx2BxX5ynbsuh-j8NWn5AyMlzIYQC9lMtrs_mgbhGNYg/exec"; // <— reemplaza por tu URL
 
     // 📦 2) Catálogo con precios en CLP (extraído del catálogo PDF)
     const products = [
@@ -179,6 +214,7 @@
     const toastEl = document.getElementById('toast');
     const qEl = document.getElementById('q');
     const countChip = document.getElementById('countChip');
+    const successModal = document.getElementById('successModal');
 
     const CLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 
@@ -194,7 +230,7 @@
 
       catalogEl.innerHTML = list.map(p => {
         return `<article class="card">
-          <div class="thumb">Imagen de referencia</div>
+          <div class="thumb"><img src="images/${cssId(p.name)}.jpg" alt="${p.name}" onerror="this.replaceWith(document.createTextNode('Imagen de referencia'))" /></div>
           <div class="title">${p.name}</div>
           <div class="price">${CLP.format(p.price)}</div>
           <div class="qty">
@@ -293,6 +329,7 @@
           body: JSON.stringify(payload)
         });
         showToast();
+        showModal(); // 👈 abre el modal de éxito
         // Limpieza gentil
         clearCart();
         document.getElementById('orderForm').reset();
@@ -306,6 +343,18 @@
       toastEl.classList.add('show');
       setTimeout(()=> toastEl.classList.remove('show'), 2500);
     }
+
+    // Modal helpers
+    function showModal(){
+      successModal.style.display = 'flex';
+    }
+    function hideModal(){
+      successModal.style.display = 'none';
+    }
+    // Cierra modal al hacer click fuera
+    successModal?.addEventListener('click', (e)=>{
+      if(e.target === successModal) hideModal();
+    });
 
     // Inicial
     render();
